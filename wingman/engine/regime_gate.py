@@ -1,6 +1,6 @@
 def check_regime(context: dict) -> dict:
     """
-    Ask the Anthropic API to assess the current market regime and gate the
+    Ask the Gemini API to assess the current market regime and gate the
     proposed trade's sizing accordingly, before it reaches execution.
 
     Args:

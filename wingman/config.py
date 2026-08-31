@@ -37,6 +37,22 @@ RISK_FREE_RATE = 0.04
 DIVIDEND_ESTIMATE = 1.90
 
 # --- Decision gates (tunable) ---------------------------------------------------
+# Only strikes within spot * (1 +/- TRADABLE_MONEYNESS_BAND) may become the
+# winning trade candidate. The unshifted 2-component mixture (both lognormals
+# sharing one forward) produces a roughly symmetric smile around the forward,
+# not SPY's monotonic put skew — Brigo's MDD lecture notes state this
+# explicitly (the shifted extension is the proper fix, not implemented this
+# week). Outside this band, large residuals measure that model limitation,
+# not market mispricing, so the decision engine must not act on them. Strikes
+# outside the band still participate in the fit and the RMSE noise floor.
+# Tightened 0.05 -> 0.02 -> 0.015 on 2026-08-31: three consecutive live
+# cycles (14:41, 14:56, 15:12 UK) all proposed straddles within 1.87-2.05%
+# of spot, tracking spot's movement rather than reflecting an independent
+# signal — confirmed structural artifact of the unshifted 2-component
+# mixture (documented above: it can't capture SPY's downward skew, so it
+# systematically underprices the upside wing at a roughly constant moneyness
+# offset). 0.015 excludes this cluster with margin.
+TRADABLE_MONEYNESS_BAND = 0.015
 # A residual must exceed this multiple of the strike's own half-spread
 # ((ask - bid) / 2) to count as signal rather than quote noise.
 HALF_SPREAD_MULTIPLE = 0.5

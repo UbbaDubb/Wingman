@@ -12,7 +12,7 @@ Residual convention (fixed): residual = market_mid - model_price.
 
 import numpy as np
 
-from wingman.config import HALF_SPREAD_MULTIPLE, RMSE_MULTIPLE
+from wingman.config import HALF_SPREAD_MULTIPLE, RMSE_MULTIPLE, TRADABLE_MONEYNESS_BAND
 from wingman.models.fit_utils import call_equivalent_quote
 from wingman.models.mixture_dynamics import mixture_price
 
@@ -55,12 +55,35 @@ def _leg_from_side(side: dict) -> dict:
     }
 
 
+def _wide_leg_reason(residual: float, legs: dict) -> str | None:
+    """
+    Execution-spread gate on the ACTUAL legs to be traded (the residual gate
+    upstream only checks the call-equivalent reference quote, which can be a
+    different, tighter instrument than what we execute — e.g. a straddle's
+    deep-ITM put). A leg whose own half-spread exceeds
+    HALF_SPREAD_MULTIPLE * |residual| would eat the modeled edge just crossing
+    the market: reject. Returns a reason string if any leg is too wide, else
+    None.
+    """
+    edge = abs(residual)
+    for name, side in legs.items():
+        half_spread = 0.5 * (side["ask"] - side["bid"])
+        if half_spread > HALF_SPREAD_MULTIPLE * edge:
+            return (
+                f"{name} leg half-spread {half_spread:.2f} > "
+                f"{HALF_SPREAD_MULTIPLE} x edge {edge:.2f}"
+            )
+    return None
+
+
 def propose_trade(snapshot: dict, fit_result: dict) -> dict | None:
     """
     Scan every strike, compute residual = market call-equivalent mid minus
-    mixture model price, gate for materiality, and propose a structure at the
-    single highest-conviction strike (largest |residual|). Returns None when
-    nothing clears both gates.
+    mixture model price, restrict candidates to the tradable moneyness band
+    (the unshifted mixture misprices the skewed wings by construction), gate
+    for materiality, and propose a structure at the single highest-conviction
+    strike (largest |residual|) whose ACTUAL execution legs are also tight
+    enough to keep the edge. Returns None when nothing clears every gate.
 
     Expects fit_result to have been enriched by the caller (loop.py) with
     'forward' and 'tte' (and 'r'), since the fit signature itself doesn't
@@ -107,11 +130,23 @@ def propose_trade(snapshot: dict, fit_result: dict) -> dict | None:
     # rather than inside fit_mixture because mixture_dynamics.py is frozen.)
     rmse = float(np.sqrt(np.mean([c["residual"] ** 2 for c in rows])))
 
+    # --- Moneyness band (model-limitation guard) --------------------------------
+    # The unshifted 2-component mixture shares one forward across both
+    # components, so it fits a near-symmetric smile and systematically
+    # misprices the skewed wings (see TRADABLE_MONEYNESS_BAND in config.py,
+    # per Brigo's MDD notes). Wing residuals therefore measure the model's
+    # limitation, not an edge: strikes outside the band stay in `rows` (and in
+    # the RMSE above) for diagnostics, but may never become the trade.
+    in_band = [
+        c for c in rows
+        if abs(c["strike"] / spot - 1.0) <= TRADABLE_MONEYNESS_BAND
+    ]
+
     # --- Materiality gates (both must pass) -------------------------------------
     # 1. beat the strike's own quote noise (half-spread),
     # 2. beat the fit's own noise floor (RMSE).
     candidates = [
-        c for c in rows
+        c for c in in_band
         if abs(c["residual"]) > HALF_SPREAD_MULTIPLE * c["half_spread"]
         and abs(c["residual"]) > RMSE_MULTIPLE * rmse
     ]
@@ -129,6 +164,15 @@ def propose_trade(snapshot: dict, fit_result: dict) -> dict | None:
 
         if cand["residual"] < 0:
             # Market underpriced vs model -> own the vol: long straddle.
+            # Execution-spread gate on BOTH legs we'd actually buy (the
+            # call-equivalent quote gated above can be much tighter than the
+            # executed legs — e.g. the deep-ITM put side of this straddle).
+            wide = _wide_leg_reason(
+                cand["residual"], {"call": row["call"], "put": row["put"]}
+            )
+            if wide:
+                print(f"[decision] K={k:g} straddle skipped: {wide}")
+                continue
             return {
                 "structure": "long_straddle",
                 "underlying": snapshot["underlying"],
@@ -162,6 +206,14 @@ def propose_trade(snapshot: dict, fit_result: dict) -> dict | None:
             continue
         far_strike = higher[0]
         far_row = next(r_ for r_ in snapshot["strikes"] if r_["strike"] == far_strike)
+        # Same execution-spread gate on the two call legs actually traded.
+        wide = _wide_leg_reason(
+            cand["residual"],
+            {"short_call": row["call"], "long_call": far_row["call"]},
+        )
+        if wide:
+            print(f"[decision] K={k:g} vertical skipped: {wide}")
+            continue
         return {
             "structure": "short_call_vertical",
             "underlying": snapshot["underlying"],
@@ -186,5 +238,6 @@ def propose_trade(snapshot: dict, fit_result: dict) -> dict | None:
             ),
         }
 
-    # Only rich-vol candidates existed and none had a hedge strike available.
+    # Every candidate was rejected: wide execution legs, or (for rich-vol
+    # candidates) no hedge strike available.
     return None

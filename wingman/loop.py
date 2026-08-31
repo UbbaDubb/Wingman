@@ -5,14 +5,16 @@ build order -> submit -> log.
 Run from the REPO ROOT (see wingman/__init__.py for why):
     python -m wingman.loop                     # fetch live snapshot, one cycle
     python -m wingman.loop path/to/snap.json   # replay a saved snapshot
+    python -m wingman.loop --schedule          # run every CYCLE_INTERVAL_MINUTES
+                                               # during market hours, until Ctrl+C
 
 Safety: DRY_RUN defaults to True (config.py); set WINGMAN_DRY_RUN=0 to submit
-for real. The scheduling loop (every CYCLE_INTERVAL_MINUTES) is intentionally
-NOT implemented yet — run_cycle() must be proven correct standalone first.
+for real — the scheduler NEVER flips it itself.
 """
 
 import json
 import sys
+import time
 import traceback
 from datetime import datetime, timezone
 
@@ -24,11 +26,13 @@ from wingman.config import (
     RISK_FREE_RATE,
     DIVIDEND_ESTIMATE,
     MIN_FIT_STRIKES,
+    CYCLE_INTERVAL_MINUTES,
 )
 from wingman.data.fetch_snapshot import fetch_spy_chain_snapshot
 from wingman.engine.decision import propose_trade
 from wingman.execution.cli_client import submit_order
 from wingman.execution.order_builder import build_straddle, build_vertical
+from wingman.logging.account_tracker import snapshot_account
 from wingman.logging.logger import log_cycle
 from wingman.models.fit_utils import call_equivalent_quote, implied_vol_call
 from wingman.models.mixture_dynamics import fit_mixture
@@ -181,8 +185,87 @@ def run_cycle(snapshot_path: str | None = None) -> dict:
     return record
 
 
+def _market_is_open() -> bool | None:
+    """
+    Ask Alpaca's clock whether the market is open right now. Returns None if
+    the clock itself can't be read (network/API hiccup) — the scheduler
+    treats that as "don't run a cycle" but keeps the loop alive.
+    """
+    from alpaca.trading.client import TradingClient
+    from wingman.data.fetch_snapshot import _get_credentials
+
+    try:
+        api_key, secret = _get_credentials()
+        return bool(TradingClient(api_key, secret, paper=True).get_clock().is_open)
+    except Exception as exc:  # noqa: BLE001 — clock failure must not kill the loop
+        print(f"[scheduler] WARNING: market clock check failed: {exc}")
+        return None
+
+
+def run_scheduler() -> None:
+    """
+    Run run_cycle() every CYCLE_INTERVAL_MINUTES during market hours, forever,
+    until Ctrl+C.
+
+    Survivability contract:
+      - market closed  -> log a skip record, sleep, try again (so a process
+        started pre-open picks up automatically at the bell);
+      - clock unreadable -> same as closed (fail safe, never fetch blind);
+      - ANY exception inside a cycle -> logged, loop continues; a bad tick
+        must never kill the process;
+      - Ctrl+C -> finish whatever write is in flight (log_cycle writes are
+        single atomic appends), log a shutdown record, exit 0.
+    """
+    interval_s = CYCLE_INTERVAL_MINUTES * 60
+    print(f"[scheduler] started: every {CYCLE_INTERVAL_MINUTES}min during market "
+          f"hours, DRY_RUN={DRY_RUN} (flip is manual, via WINGMAN_DRY_RUN)")
+    try:
+        while True:
+            started = datetime.now(timezone.utc).isoformat()
+            is_open = _market_is_open()
+            if is_open:
+                try:
+                    run_cycle()  # logs its own record, catches its own stage errors
+                except Exception as exc:  # noqa: BLE001 — belt and braces:
+                    # run_cycle() already contains per-stage handling, but the
+                    # loop must survive even a bug in that handling itself.
+                    traceback.print_exc()
+                    try:
+                        log_cycle({
+                            "timestamp": started,
+                            "scheduler": "cycle raised outside stage handling",
+                            "error": f"{type(exc).__name__}: {exc}",
+                        })
+                    except Exception:  # noqa: BLE001 — nothing left to do
+                        traceback.print_exc()
+                # Account/position mark-to-market snapshot, once per cycle
+                # whether or not a trade was proposed — builds the 15-minute
+                # equity time series for the weekly report. snapshot_account()
+                # never raises (errors land in its own record).
+                snap = snapshot_account()
+                if snap.get("error"):
+                    print(f"[scheduler] WARNING: account snapshot failed: {snap['error']}")
+            else:
+                reason = "market closed" if is_open is False else "market clock unreadable"
+                print(f"[scheduler] {started} {reason} — skipping cycle")
+                log_cycle({
+                    "timestamp": started,
+                    "scheduler": f"skipped: {reason}",
+                    "dry_run": DRY_RUN,
+                })
+            time.sleep(interval_s)
+    except KeyboardInterrupt:
+        stopped = datetime.now(timezone.utc).isoformat()
+        print(f"\n[scheduler] Ctrl+C — shutting down cleanly at {stopped}")
+        log_cycle({"timestamp": stopped, "scheduler": "clean shutdown (KeyboardInterrupt)"})
+
+
 def main():
-    # Optional CLI arg: replay a saved snapshot instead of fetching live.
+    # `--schedule` runs the recurring loop; otherwise one cycle (optionally
+    # replaying a saved snapshot passed as the first argument).
+    if "--schedule" in sys.argv[1:]:
+        run_scheduler()
+        return
     snapshot_path = sys.argv[1] if len(sys.argv) > 1 else None
     record = run_cycle(snapshot_path)
     print("\n=== cycle record ===")

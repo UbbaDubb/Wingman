@@ -27,12 +27,18 @@ from wingman.config import (
     DIVIDEND_ESTIMATE,
     MIN_FIT_STRIKES,
     CYCLE_INTERVAL_MINUTES,
+    EVENT_FLAG,
 )
 from wingman.data.fetch_snapshot import fetch_spy_chain_snapshot
 from wingman.engine.decision import propose_trade
+from wingman.engine.regime_gate import check_regime
 from wingman.execution.cli_client import submit_order
 from wingman.execution.order_builder import build_straddle, build_vertical
-from wingman.logging.account_tracker import snapshot_account
+from wingman.logging.account_tracker import (
+    get_account_state,
+    get_open_positions,
+    snapshot_account,
+)
 from wingman.logging.logger import log_cycle
 from wingman.models.fit_utils import call_equivalent_quote, implied_vol_call
 from wingman.models.mixture_dynamics import fit_mixture
@@ -75,18 +81,25 @@ def _fit_inputs(snapshot: dict, forward: float, tte: float) -> tuple[list, list]
     return strikes, ivs
 
 
-def run_cycle(snapshot_path: str | None = None) -> dict:
+def run_cycle(snapshot_path: str | None = None,
+              positions: list | None = None) -> dict:
     """
     Execute one full cycle and return the log record. Every stage is wrapped
     so a failure logs an error and aborts the REST of the cycle — never the
     process; this has to survive unattended for days.
+
+    `positions`: pre-fetched get_open_positions() result (the scheduler passes
+    it so one API call serves both Gate B and the account snapshot). None ->
+    fetched here before the decision stage; if that fetch fails, the decision
+    stage is SKIPPED (fail-safe: never propose trades against unknown
+    holdings — that is exactly how Monday accumulated 9 duplicate straddles).
     """
     record: dict = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "dry_run": DRY_RUN,
         "snapshot": None,
         "fit_result": None,
-        "regime_gate": "not yet implemented, trading unrestricted",
+        "regime_gate": None,
         "decision": None,
         "order_payload": None,
         "order_result": None,
@@ -147,8 +160,22 @@ def run_cycle(snapshot_path: str | None = None) -> dict:
 
     # --- 3. decide ----------------------------------------------------------------
     try:
-        proposal = propose_trade(snapshot, fit_result)
+        if positions is None:
+            try:
+                positions = get_open_positions()
+            except Exception as exc:  # noqa: BLE001 — fail safe, not silent
+                record["errors"].append(
+                    f"positions: {type(exc).__name__}: {exc} — holdings unknown, "
+                    "skipping decision stage (fail-safe)"
+                )
+                log_cycle(record)
+                return record
+        record["open_position_legs"] = len(positions)
+        proposal, gate_hits = propose_trade(
+            snapshot, fit_result, current_positions=positions
+        )
         record["decision"] = proposal
+        record["gate_hits"] = gate_hits
         if proposal:
             print(f"[decision] {proposal['rationale']}")
         elif fit_result.get("degenerate_fit"):
@@ -160,8 +187,41 @@ def run_cycle(snapshot_path: str | None = None) -> dict:
     except Exception as exc:  # noqa: BLE001
         return fail("decide", exc)
 
-    # --- 4. regime gate: NOT BUILT YET ------------------------------------------
-    print("[regime_gate] not yet implemented, trading unrestricted")
+    # --- 4. regime gate ----------------------------------------------------------
+    # Called only when there is a proposal to gate (saves an API call on every
+    # no-trade cycle). check_regime never raises; "stand_down" blocks
+    # submission, "half" halves qty (floor 1 — see regime_gate contract).
+    if proposal:
+        unrealized = sum(
+            p["unrealized_pl"] for p in positions
+            if p.get("unrealized_pl") is not None
+        )
+        try:
+            equity = get_account_state()["equity"]
+        except Exception as exc:  # noqa: BLE001 — gate still works without it
+            print(f"[regime_gate] WARNING: equity fetch failed: {exc}")
+            equity = None
+        gate = check_regime({
+            "fit_rmse": proposal["fit_rmse"],
+            "fit_success": fit_result["success"],
+            "proposed_trade": proposal,
+            "current_positions": {p["symbol"]: p["qty"] for p in positions},
+            "unrealized_pl_total": unrealized,
+            "account_equity": equity,
+            "gates_binding_this_cycle": gate_hits,
+            "event_flag": EVENT_FLAG,
+        })
+        record["regime_gate"] = gate
+        print(f"[regime_gate] {gate['decision']}: {gate['rationale']}")
+        if gate["decision"] == "stand_down":
+            proposal = None  # record["decision"] keeps the original proposal
+        elif gate["decision"] == "half":
+            proposal["qty"] = max(1, proposal["qty"] // 2)
+    else:
+        record["regime_gate"] = {
+            "decision": "skipped",
+            "rationale": "no proposal this cycle — gate not called",
+        }
 
     # --- 5. build + submit ---------------------------------------------------------
     if proposal:
@@ -224,8 +284,17 @@ def run_scheduler() -> None:
             started = datetime.now(timezone.utc).isoformat()
             is_open = _market_is_open()
             if is_open:
+                # One position fetch per cycle, shared by the decision stage
+                # (Gate B) and the account snapshot so both see the same
+                # holdings. On failure pass None: run_cycle then fail-safes
+                # (skips its decision stage) and snapshot_account refetches.
                 try:
-                    run_cycle()  # logs its own record, catches its own stage errors
+                    positions = get_open_positions()
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[scheduler] WARNING: position fetch failed: {exc}")
+                    positions = None
+                try:
+                    run_cycle(positions=positions)  # logs its own record
                 except Exception as exc:  # noqa: BLE001 — belt and braces:
                     # run_cycle() already contains per-stage handling, but the
                     # loop must survive even a bug in that handling itself.
@@ -242,7 +311,7 @@ def run_scheduler() -> None:
                 # whether or not a trade was proposed — builds the 15-minute
                 # equity time series for the weekly report. snapshot_account()
                 # never raises (errors land in its own record).
-                snap = snapshot_account()
+                snap = snapshot_account(positions=positions)
                 if snap.get("error"):
                     print(f"[scheduler] WARNING: account snapshot failed: {snap['error']}")
             else:

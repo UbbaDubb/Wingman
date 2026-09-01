@@ -10,7 +10,18 @@ import os
 UNDERLYING = "SPY"
 EXPIRY = "2026-09-18"          # option expiration (YYYY-MM-DD)
 CYCLE_INTERVAL_MINUTES = 15
-MAX_NOTIONAL_PER_TRADE = 1000
+# Raised 1000 -> 2500 on 2026-09-01 when the notional gate was first wired in:
+# an ATM SPY straddle costs ~$1,750-2,050, so $1,000 would have banned
+# straddles outright. 2500 keeps single straddles tradeable while Gate B
+# (MAX_POSITION_QTY_PER_LEG) caps duplication regardless of notional.
+MAX_NOTIONAL_PER_TRADE = 2500
+# Max contracts already held per individual leg symbol before the engine
+# refuses to propose a structure touching that symbol again. Added 2026-09-01
+# after Monday's live session: the engine re-proposed the same K=777 straddle
+# every 15 minutes (the upside-wing model artifact persisted all afternoon)
+# and NINE of them filled — ~$21k of premium in one repeated position,
+# because nothing ever checked existing holdings. See logs/2026-08-31.jsonl.
+MAX_POSITION_QTY_PER_LEG = 2
 
 # --- Data / liquidity filters (tunable) ---------------------------------------
 # Only consider strikes within spot * (1 +/- STRIKE_RANGE_PCT). Outside ~12%
@@ -60,6 +71,12 @@ HALF_SPREAD_MULTIPLE = 0.5
 # strikes — the model's noise floor. Below it we'd be trading our own
 # estimation error.
 RMSE_MULTIPLE = 1.0
+
+# --- Regime gate ----------------------------------------------------------------
+# Manual event note passed to the LLM regime gate each cycle, e.g.
+# "FOMC in 18h". Human-entered only — no live calendar fetching (by design).
+# None = no known upcoming event.
+EVENT_FLAG = None
 
 # --- Execution -----------------------------------------------------------------
 # Safety default: dry-run unless explicitly disabled with WINGMAN_DRY_RUN=0.

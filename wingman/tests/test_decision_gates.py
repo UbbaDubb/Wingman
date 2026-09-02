@@ -165,6 +165,55 @@ def run():
     prop, hits = propose_trade(snap_cheap, make_fit(), current_positions={})
     check("empty positions dict == no positions", prop is not None and prop["strike"] == 770.0)
 
+    print("== GATE A (aggregate): long-vol exposure cap across strikes ==")
+    saved_agg_cap = decision.MAX_AGGREGATE_LONG_VOL_NOTIONAL
+    # Three existing long straddles (750/755/760), $2,500/leg market_value ->
+    # $15,000 aggregate == the real cap. A fresh straddle candidate (785,
+    # never held before, passes every OTHER gate) must still be rejected.
+    at_cap_positions = [
+        {"symbol": _sym("C", k), "qty": 1, "market_value": 2500.0}
+        for k in (750.0, 755.0, 760.0)
+    ] + [
+        {"symbol": _sym("P", k), "qty": 1, "market_value": 2500.0}
+        for k in (750.0, 755.0, 760.0)
+    ]
+    prop, hits = propose_trade(make_snapshot({780.0: -1.0}), make_fit(),
+                               current_positions=at_cap_positions)
+    check("aggregate long-vol exposure at $15,000 cap -> fresh straddle (K=780) rejected",
+          prop is None and hits["notional_gate_hits"] == 1, f"got {prop}, {hits}")
+    # Verticals are explicitly unaffected by this check: same at-cap holdings,
+    # a rich-vol candidate (vertical) in the same cycle must still pass.
+    prop, hits = propose_trade(make_snapshot({770.0: +1.0}), make_fit(),
+                               current_positions=at_cap_positions)
+    check("vertical unaffected by straddle aggregate cap -> still proposed",
+          prop is not None and prop["structure"] == "short_call_vertical", f"got {prop}, {hits}")
+    # Comfortably under the cap ($12,000) -> a fresh straddle still proposed.
+    under_cap_positions = [
+        {"symbol": _sym(k2, k), "qty": 1, "market_value": 2000.0}
+        for k in (750.0, 755.0, 760.0) for k2 in ("C", "P")
+    ]
+    prop, hits = propose_trade(make_snapshot({780.0: -1.0}), make_fit(),
+                               current_positions=under_cap_positions)
+    check("aggregate long-vol exposure at $12,000 (under cap) -> straddle still proposed",
+          prop is not None and prop["strike"] == 780.0, f"got {prop}, {hits}")
+    decision.MAX_AGGREGATE_LONG_VOL_NOTIONAL = saved_agg_cap
+
+    print("== WASH-TRADE GUARD: opposing-direction conflict (2026-09-02 incident) ==")
+    call780 = _sym("C", 780.0)
+    # A fresh straddle wants to BUY call780+put780, but call780 is already
+    # held SHORT — direction conflict, must reject (not just skip on notional
+    # or the qty cap, which wouldn't catch this since qty magnitude is 1).
+    prop, hits = propose_trade(make_snapshot({780.0: -1.0}), make_fit(),
+                               current_positions={call780: -1})
+    check("straddle vs already-short call780 -> direction conflict rejected",
+          prop is None and hits["position_gate_hits"] == 1, f"got {prop}, {hits}")
+    # Replicates the live incident exactly: a vertical's SHORT leg (770) is
+    # already held LONG (e.g. bought as another trade's hedge) -> reject.
+    prop, hits = propose_trade(make_snapshot({770.0: +1.0}), make_fit(),
+                               current_positions={call770: 1})
+    check("vertical short-leg already held LONG -> direction conflict rejected (2026-09-02 replay)",
+          prop is None and hits["position_gate_hits"] == 1, f"got {prop}, {hits}")
+
     decision.MAX_NOTIONAL_PER_TRADE = saved_cap
     print(f"\nALL {PASS} CHECKS PASSED")
 

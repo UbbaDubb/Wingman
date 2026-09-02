@@ -22,6 +22,14 @@ MAX_NOTIONAL_PER_TRADE = 2500
 # and NINE of them filled — ~$21k of premium in one repeated position,
 # because nothing ever checked existing holdings. See logs/2026-08-31.jsonl.
 MAX_POSITION_QTY_PER_LEG = 2
+# Aggregate cap on dollar exposure across ALL currently-held long straddle
+# positions (verticals are unaffected — typically short-vol/defined-risk and
+# already capped differently). Added 2026-09-02 after the Mon-Wed live data
+# showed the moneyness-artifact band producing a new tradeable strike nearly
+# every day (774 Mon, 775/776/777/778 Tue-Wed) — MAX_POSITION_QTY_PER_LEG
+# caps each individual strike, but nothing previously stopped the SUM across
+# strikes from growing indefinitely as the artifact keeps finding fresh room.
+MAX_AGGREGATE_LONG_VOL_NOTIONAL = 15000
 
 # --- Data / liquidity filters (tunable) ---------------------------------------
 # Only consider strikes within spot * (1 +/- STRIKE_RANGE_PCT). Outside ~12%

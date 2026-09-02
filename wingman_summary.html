@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wingman — Week One Summary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#022D5A;
+    --ink-soft:#3E5C7A;
+    --teal:#039C97;
+    --teal-tint:#E3F5F3;
+    --clay:#B5563B;
+    --clay-tint:#F6E9E4;
+    --bg:#F7F9FB;
+    --surface:#EDF1F5;
+    --surface-line:#DAE3EC;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--navy);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    line-height:1.55; font-size:16px;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:0 28px 100px;}
+  h1,h2,h3{font-family:"Newsreader",Georgia,serif; color:var(--navy); font-weight:600; margin:0;}
+  h2{font-size:1.55rem; letter-spacing:-0.01em;}
+  h3{font-size:1.15rem; font-style:italic; font-weight:500; color:var(--ink-soft);}
+  p{color:var(--ink-soft); margin:0.6em 0;}
+  code, .mono{font-family:"IBM Plex Mono",monospace;}
+  a{color:var(--teal);}
+
+  /* header */
+  header{
+    display:flex; align-items:center; gap:14px;
+    padding:36px 0 28px; border-bottom:1px solid var(--surface-line);
+    margin-bottom:36px;
+  }
+  header img{height:38px; width:auto; display:block;}
+  header .word{font-family:"Newsreader",serif; font-size:1.6rem; font-weight:600; color:var(--navy);}
+  header .tag{font-size:0.85rem; color:var(--ink-soft); margin-left:auto; text-align:right; font-style:italic;}
+
+  /* hero stat row */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:8px 0 40px;}
+  .stat{background:var(--surface); border-radius:10px; padding:16px 14px;}
+  .stat .num{font-family:"IBM Plex Mono",monospace; font-size:1.5rem; font-weight:600; color:var(--navy);}
+  .stat .num.good{color:var(--teal);}
+  .stat .num.risk{color:var(--clay);}
+  .stat .lbl{font-size:0.78rem; color:var(--ink-soft); margin-top:3px;}
+
+  section{margin:52px 0;}
+  section > h2{margin-bottom:6px;}
+  .lede{max-width:640px;}
+
+  .day-block{
+    border-left:3px solid var(--surface-line); padding-left:20px; margin:26px 0;
+  }
+  .day-block.mon{border-color:var(--ink-soft);}
+  .day-block.tue{border-color:var(--clay);}
+  .day-block.wed{border-color:var(--teal);}
+  .day-block h3{margin-bottom:8px;}
+
+  blockquote{
+    margin:14px 0; padding:12px 16px; background:var(--surface);
+    border-left:3px solid var(--teal); border-radius:0 6px 6px 0;
+    font-family:"IBM Plex Mono",monospace; font-size:0.86rem; color:var(--navy);
+  }
+  blockquote.risk{border-left-color:var(--clay); background:var(--clay-tint);}
+
+  figure{margin:24px 0;}
+  figure img{width:100%; display:block; border-radius:10px; border:1px solid var(--surface-line); background:var(--white);}
+  figcaption{font-size:0.85rem; color:var(--ink-soft); margin-top:8px; font-style:italic;}
+
+  table{width:100%; border-collapse:collapse; font-size:0.86rem; margin:18px 0;}
+  th,td{padding:9px 10px; text-align:right; border-bottom:1px solid var(--surface-line);}
+  th:first-child, td:first-child{text-align:left;}
+  th{color:var(--ink-soft); font-weight:500; font-size:0.76rem; text-transform:uppercase; letter-spacing:0.03em;}
+  td{font-family:"IBM Plex Mono",monospace; color:var(--navy);}
+  tr:last-child td{border-bottom:none;}
+  tr.total td{font-weight:600; border-top:2px solid var(--navy);}
+
+  .pill{display:inline-block; padding:2px 9px; border-radius:100px; font-size:0.72rem; font-family:"IBM Plex Mono",monospace; font-weight:600;}
+  .pill.full{background:var(--teal-tint); color:var(--teal);}
+  .pill.half{background:var(--clay-tint); color:var(--clay);}
+  .pill.stand{background:var(--clay); color:var(--white);}
+
+  .gate-table td.n{text-align:center; font-size:1.05rem; font-weight:600;}
+
+  .callout{
+    background:var(--surface); border-radius:10px; padding:20px 22px; margin:20px 0;
+  }
+  .callout.risk{background:var(--clay-tint);}
+  .callout h4{margin:0 0 6px; font-family:"IBM Plex Sans"; font-size:0.95rem; font-weight:600; color:var(--navy);}
+
+  footer{
+    border-top:1px solid var(--surface-line); margin-top:60px; padding-top:20px;
+    font-size:0.8rem; color:var(--ink-soft);
+  }
+  .swatch-note{font-size:0.78rem; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <img src="wingman/logo.jpg" alt="Wingman">
+    <span class="word">Wingman</span>
+    <span class="tag">SPY volatility-surface trading agent<br>Week one — paper trading, live since 31 Aug 2026</span>
+  </header>
+
+  <section>
+    <h2>Three days, in numbers</h2>
+    <p class="lede">Every figure below is <strong>unrealized</strong> mark-to-market. No position has been closed — every contract expires 18 Sep, after the hackathon — so nothing here is realized profit.</p>
+    <div class="stats">
+      <div class="stat"><div class="num">79</div><div class="lbl">cycles run</div></div>
+      <div class="stat"><div class="num">24</div><div class="lbl">orders submitted</div></div>
+      <div class="stat"><div class="num risk">&minus;0.71%</div><div class="lbl">equity, week to date</div></div>
+      <div class="stat"><div class="num good">2</div><div class="lbl">model limitations found &amp; documented</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The week, day by day</h2>
+    <p class="lede">Gate-hit counting (spread / notional / position) began the morning of 1 Sep — Monday's rejections were printed to console, not logged, so those columns read zero by construction, not because nothing fired.</p>
+
+    <div class="day-block mon">
+      <h3>Monday 31 Aug — the incident</h3>
+      <p>20 of 31 cycles proposed a trade; 14 orders submitted, with nothing checking existing exposure or repetition. The same K=777 straddle was re-proposed and filled <strong>nine times</strong> — roughly $21,000 of premium concentrated in one repeated position, discovered only in the next morning's log review.</p>
+    </div>
+
+    <div class="day-block tue">
+      <h3>Tuesday 1 Sep — the fix, and a second model limitation</h3>
+      <p>Deterministic risk gates shipped before market open: a per-trade notional cap and a per-leg position cap (max 2 contracts per exact symbol). Peak concentration on any single leg fell from 9 to 3. Sixteen of 28 cycles were separately rejected by a degenerate-fit guard — the mixture model's second component drifted to <code>lam &gt; 0.98</code>, effectively vanishing, letting <code>sigma2</code> escalate as high as 2.55 (later 5.0, the optimizer's own bound) with no real trading signal behind it.</p>
+      <blockquote>&ldquo;Fit RMSE of 0.653 is within normal bounds, fit_success is true, zero gate rejections occurred this cycle, and unrealized P&amp;L is positive at $278.89 on $101,006.32 total account equity with no event flags.&rdquo;<br><span class="swatch-note">— regime gate, 14:16:41 UTC, verdict <span class="pill full">full</span></span></blockquote>
+    </div>
+
+    <div class="day-block wed">
+      <h3>Wednesday 2 Sep — 21 rejections, 4 fills, and a broker-level catch</h3>
+      <p>Position-gate rejections rose sharply against a low fill count — investigated directly rather than assumed benign. Replaying the exact gate logic against saved snapshots confirmed every rejection matched a genuinely saturated strike (774&ndash;777, the same three-day-old artifact band), not a new bug:</p>
+      <blockquote>K=774 straddle skipped: already holding qty 3 &gt;= limit 2 on SPY260918C00774000</blockquote>
+      <p>Separately, one proposal cleared every internal gate — including a <span class="pill full">full</span> regime verdict — and was still rejected, by Alpaca itself:</p>
+      <blockquote class="risk">"potential wash trade detected. use complex orders" — 403, Alpaca API</blockquote>
+      <p>Root cause: the engine proposed <em>selling</em> a call already held <em>long</em> as another trade's hedge leg from 45 minutes earlier — a same-day opposing-direction conflict no existing gate checked for. Fixed same-day: a direction-conflict guard, plus an aggregate long-vol notional cap ($15,000 across all held straddles) bounding the "a fresh strike enters the tradable band every day" accumulation risk visible across all three days. Both were replayed against the actual failing cycle and confirmed to catch it.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Three days, one view</h2>
+    <p class="lede">Charts are generated by <code>report.py</code> directly from the JSONL logs — no numbers are hand-transcribed.</p>
+
+    <figure>
+      <img src="wingman/reports/fit_quality.png" alt="Mixture fit quality per cycle, market hours only">
+      <figcaption>Sigma1/sigma2/RMSE per cycle. Monday's fit sits flat inside the plausibility band throughout; Tuesday's sustained degeneracy run climbs out of it from mid-afternoon on, peaking at the optimizer's own 5.0 bound.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="wingman/reports/moneyness.png" alt="Moneyness of every proposed trade over time">
+      <figcaption>Every proposed trade's moneyness. The shaded band is the documented model artifact — proposals cluster ~1.4&ndash;2.1% above spot for three consecutive days, regardless of the underlying residual.</figcaption>
+    </figure>
+
+    <figure>
+      <img src="wingman/reports/equity_unrealized.png" alt="Account equity and unrealized P&L across the week">
+      <figcaption>Account equity and total unrealized P&amp;L, continuous across all three days (market-hours only — no dead space for closed overnight periods).</figcaption>
+    </figure>
+
+    <figure>
+      <img src="wingman/reports/gate_comparison.png" alt="Trades submitted vs gate rejections, per day">
+      <figcaption>Trades submitted vs. rejections per gate type, per day — the clearest single image of the incident (Monday, no gates) against the fix (Tuesday&ndash;Wednesday, deterministic gates actively containing the same recurring artifact).</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Daily summary</h2>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>Date</th><th>Cycles</th><th>Proposed</th><th>Submitted</th>
+        <th>Spread</th><th>Notional</th><th>Position</th><th>Degen.</th>
+        <th>Full</th><th>Half</th><th>Stand&nbsp;down</th>
+        <th>Start eq.</th><th>End eq.</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>31 Aug</td><td>31</td><td>20</td><td>14</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>99,998.60</td><td>99,187.20</td></tr>
+        <tr><td>1 Sep</td><td>28</td><td>6</td><td>6</td><td>4</td><td>0</td><td>0</td><td>16</td><td>6</td><td>0</td><td>0</td><td>101,505.32</td><td>102,356.02</td></tr>
+        <tr><td>2 Sep</td><td>20</td><td>5</td><td>4</td><td>5</td><td>2</td><td>21</td><td>2</td><td>1</td><td>4</td><td>0</td><td>101,571.26</td><td>99,293.15</td></tr>
+        <tr class="total"><td>Week</td><td>79</td><td>31</td><td>24</td><td>9</td><td>2</td><td>21</td><td>18</td><td>7</td><td>4</td><td>0</td><td>99,998.60</td><td>99,293.15</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="swatch-note">Gate-hit and regime-gate columns are zero for 31 Aug by construction — that instrumentation didn't exist yet, not because nothing was rejected. "Max/min unrealized" omitted here for space; see the equity chart above for the full trajectory.</p>
+  </section>
+
+  <section>
+    <h2>What each gate actually caught, this week</h2>
+    <table class="gate-table">
+      <thead><tr><th>Gate</th><th>Fired</th><th>What it caught</th></tr></thead>
+      <tbody>
+        <tr><td>Spread (execution)</td><td class="n">9&times;</td><td>Candidates whose actual bid/ask legs were too wide to keep the modeled edge after crossing the market.</td></tr>
+        <tr><td>Notional (per-trade + aggregate)</td><td class="n">2&times;</td><td>Individually-fine trades still blocked once the running aggregate exposure across held straddles reached its cap.</td></tr>
+        <tr><td>Position (per-leg cap)</td><td class="n">21&times;</td><td>Re-proposals of a strike already held at the 2-contract cap — the direct, working fix for Monday's incident.</td></tr>
+        <tr><td>Degenerate-fit</td><td class="n">18&times;</td><td>Fits where the mixture's second component collapsed to near-zero weight (<code>lam&gt;0.98</code>), letting sigma2 escape to implausible values. Real example: <code>sigma2=1.4425 outside plausible SPY vol band [0.05, 1.0]</code>.</td></tr>
+        <tr><td>Regime (LLM)</td><td class="n">4&times;</td><td>Restrictive verdicts out of 11 issued — sized down under real drawdown conditions rather than blocking outright.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Two model limitations, documented and worked around</h2>
+    <div class="callout">
+      <h4>1. Upside-wing moneyness artifact</h4>
+      <p>The unshifted 2-component mixture assumes both components share one forward, producing a near-symmetric smile — it cannot reproduce SPY's monotonic downside skew, so it systematically underprices the upside wing at a roughly constant moneyness offset (~1.4&ndash;2%). Confirmed against Brigo's own MDD lecture notes, which describe a shifted extension as the correct fix. Contained, not fixed, via a tradable-moneyness band and per-leg/aggregate exposure caps.</p>
+    </div>
+    <div class="callout risk">
+      <h4>2. Mixture degeneracy under a persistent regime</h4>
+      <p>When the smile sits somewhere the two-component fit handles badly, the optimizer can satisfy the residual by collapsing <code>lam</code> toward 1 and letting the now near-weightless second component's <code>sigma2</code> drift arbitrarily — a calibration artifact, not a real vol regime. The degenerate-fit guard (plausibility band [0.05, 1.0]) catches every instance before it reaches a trade.</p>
+    </div>
+  </section>
+
+  <footer>
+    Generated from <code>wingman/logging/report.py</code> against <code>logs/*.jsonl</code>. Paper trading only, Alpaca. All P&amp;L unrealized.
+  </footer>
+
+</div>
+</body>
+</html>

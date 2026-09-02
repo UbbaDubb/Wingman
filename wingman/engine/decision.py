@@ -10,10 +10,13 @@ Residual convention (fixed): residual = market_mid - model_price.
                      long call further OTM in the same mleg order)
 """
 
+import re
+
 import numpy as np
 
 from wingman.config import (
     HALF_SPREAD_MULTIPLE,
+    MAX_AGGREGATE_LONG_VOL_NOTIONAL,
     MAX_NOTIONAL_PER_TRADE,
     MAX_POSITION_QTY_PER_LEG,
     RMSE_MULTIPLE,
@@ -95,6 +98,78 @@ def _held_qty(current_positions) -> dict:
     if isinstance(current_positions, dict):
         return {s: abs(float(q)) for s, q in current_positions.items()}
     return {p["symbol"]: abs(float(p["qty"])) for p in current_positions}
+
+
+def _signed_qty(current_positions) -> dict:
+    """
+    Like _held_qty but preserves sign (long positive, short negative) — needed
+    to detect a direction conflict, which _held_qty's abs() throws away.
+    """
+    if not current_positions:
+        return {}
+    if isinstance(current_positions, dict):
+        return {s: float(q) for s, q in current_positions.items()}
+    return {p["symbol"]: float(p["qty"]) for p in current_positions}
+
+
+_OCC_SYMBOL = re.compile(r"^(.+?)([CP])(\d{8})$")  # e.g. SPY260918 C 00777000
+
+
+def _direction_conflict_reason(legs_signed: dict, current_positions) -> str | None:
+    """
+    Opposing-exposure guard: reject a candidate if any leg symbol is already
+    held in the OPPOSITE direction to what this trade would do (e.g.
+    proposing to SELL a symbol currently held LONG). Alpaca itself blocks
+    same-day opposing trades as a wash-trade risk — confirmed live on
+    2026-09-02 (403, "potential wash trade detected") when a vertical tried
+    to sell a call bought as another trade's hedge leg 45 minutes earlier.
+    Gate B (_position_reason) only checks same-direction ACCUMULATION via
+    qty magnitude and would not have caught this; this checks direction.
+
+    legs_signed: {name: (direction, symbol)}, direction +1 = this trade buys
+    that symbol, -1 = this trade sells it.
+    """
+    held = _signed_qty(current_positions)
+    for name, (direction, sym) in legs_signed.items():
+        qty = held.get(sym, 0.0)
+        if qty == 0:
+            continue
+        held_dir = 1 if qty > 0 else -1
+        if held_dir != direction:
+            return (
+                f"{name} ({sym}) direction conflict: this trade would "
+                f"{'buy' if direction > 0 else 'sell'}, but already holding "
+                f"{qty:g} ({'long' if held_dir > 0 else 'short'})"
+            )
+    return None
+
+
+def _aggregate_long_straddle_notional(current_positions) -> float:
+    """
+    Estimate aggregate dollar exposure across ALL currently-held long
+    straddle positions (both call and put legs held long at the same
+    strike) — Gate A's aggregate cap (config: MAX_AGGREGATE_LONG_VOL_NOTIONAL),
+    on top of the existing per-trade notional check. Uses each leg's
+    market_value when available (the shape account_tracker's fetch returns);
+    a plain {symbol: qty} fixture (no price data) contributes 0, so this
+    check is only truly active with the live loop.py wiring — documented
+    rather than silently guessed at in tests.
+    """
+    if not current_positions or isinstance(current_positions, dict):
+        return 0.0
+    by_strike: dict[tuple[str, str], dict[str, dict]] = {}
+    for p in current_positions:
+        m = _OCC_SYMBOL.match(p.get("symbol", ""))
+        if not m or float(p.get("qty", 0)) <= 0:
+            continue
+        prefix, kind, strike = m.groups()
+        by_strike.setdefault((prefix, strike), {})[kind] = p
+    total = 0.0
+    for legs in by_strike.values():
+        if "C" in legs and "P" in legs:
+            total += abs(legs["C"].get("market_value") or 0.0)
+            total += abs(legs["P"].get("market_value") or 0.0)
+    return total
 
 
 def _notional_reason(legs_signed: dict, qty: int) -> str | None:
@@ -252,9 +327,31 @@ def propose_trade(snapshot: dict, fit_result: dict,
                 gate_hits["notional_gate_hits"] += 1
                 print(f"[decision] K={k:g} straddle skipped: {reason}")
                 continue
+            # GATE A (aggregate): straddles only — sum dollar exposure across
+            # every currently-held long straddle; reject if already at/over
+            # the aggregate cap, regardless of this trade's own (passing)
+            # per-trade notional. Bounds the "artifact finds a fresh strike
+            # every day" accumulation risk (see MAX_AGGREGATE_LONG_VOL_NOTIONAL).
+            agg = _aggregate_long_straddle_notional(current_positions)
+            if agg >= MAX_AGGREGATE_LONG_VOL_NOTIONAL:
+                gate_hits["notional_gate_hits"] += 1
+                print(f"[decision] K={k:g} straddle skipped: aggregate long-vol "
+                      f"exposure ${agg:,.0f} >= cap ${MAX_AGGREGATE_LONG_VOL_NOTIONAL:,.0f}")
+                continue
             # GATE B: refuse to stack onto legs already held at the cap.
             reason = _position_reason(
                 (row["call"]["symbol"], row["put"]["symbol"]), held
+            )
+            if reason:
+                gate_hits["position_gate_hits"] += 1
+                print(f"[decision] K={k:g} straddle skipped: {reason}")
+                continue
+            # Wash-trade guard: refuse if either leg is already held SHORT
+            # (this trade would buy both, so any opposite-direction holding
+            # is a same-day conflict Alpaca itself will reject).
+            reason = _direction_conflict_reason(
+                {"call": (+1, row["call"]["symbol"]), "put": (+1, row["put"]["symbol"])},
+                current_positions,
             )
             if reason:
                 gate_hits["position_gate_hits"] += 1
@@ -314,6 +411,19 @@ def propose_trade(snapshot: dict, fit_result: dict,
         # GATE B: refuse to stack onto legs already held at the cap.
         reason = _position_reason(
             (row["call"]["symbol"], far_row["call"]["symbol"]), held
+        )
+        if reason:
+            gate_hits["position_gate_hits"] += 1
+            print(f"[decision] K={k:g} vertical skipped: {reason}")
+            continue
+        # Wash-trade guard: this trade sells short_call and buys long_call —
+        # reject if either symbol is already held in the opposite direction
+        # (e.g. short_call here already held LONG as another trade's hedge
+        # leg — exactly the case Alpaca rejected live on 2026-09-02).
+        reason = _direction_conflict_reason(
+            {"short_call": (-1, row["call"]["symbol"]),
+             "long_call": (+1, far_row["call"]["symbol"])},
+            current_positions,
         )
         if reason:
             gate_hits["position_gate_hits"] += 1

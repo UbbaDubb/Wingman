@@ -198,7 +198,8 @@ def fit_rmse(cycle):
 def daily_summary(days):
     print("\n== 1. DAILY SUMMARY " + "=" * 58)
     cols = ("date", "cycles", "proposed", "submitted", "spread", "notional",
-            "position", "degen", "no-cand", "rg full", "rg half", "rg stop",
+            "agg-notl", "position", "dir-cflt", "degen", "no-cand",
+            "rg full", "rg half", "rg stop",
             "start eq", "end eq", "max unrl", "min unrl")
     rows = []
     for d, day in days.items():
@@ -220,7 +221,8 @@ def daily_summary(days):
         fmt = lambda v: f"{v:,.2f}" if isinstance(v, float) else ("-" if v is None else v)
         rows.append((d, len(cycles), len(proposed), len(submitted),
                      gh("spread_gate_hits"), gh("notional_gate_hits"),
-                     gh("position_gate_hits"), degen, no_cand,
+                     gh("aggregate_notional_hits"), gh("position_gate_hits"),
+                     gh("direction_conflict_hits"), degen, no_cand,
                      verdicts.count("full"), verdicts.count("half"),
                      verdicts.count("stand_down"),
                      fmt(eq[0]), fmt(eq[-1]),
@@ -347,40 +349,58 @@ def chart_equity(days):
 
 
 def chart_gate_comparison(days):
-    """Trades submitted vs cycles rejected per gate, one bar group per day —
-    the clearest visual proof of the incident (Monday's unbounded duplicate
-    accumulation) vs the fix (Tuesday's deterministic gates capping it)."""
+    """Trades submitted vs cycles rejected per gate, one bar group per day.
+    Seven series: submitted, spread, per-trade notional, aggregate-notional
+    (whole-book cap), per-leg position, direction-conflict, degenerate-fit.
+    The aggregate-notional and direction-conflict keys were added 2026-09-02;
+    older records store 0 for those keys (their fires were counted under the
+    parent category in the now-fixed older code)."""
     dates = list(days.keys())
-    submitted, spread, notional, position, degen = [], [], [], [], []
+    submitted, spread, notional, agg_notional, position, dir_conflict, degen = (
+        [], [], [], [], [], [], []
+    )
     for d in dates:
         cycles = days[d]["cycles"]
+        gh = lambda k: sum((c.get("gate_hits") or {}).get(k, 0) for c in cycles)
         submitted.append(sum(1 for c in cycles if c.get("dry_run") is False
                              and (c.get("order_result") or {}).get("response") is not None))
-        spread.append(sum((c.get("gate_hits") or {}).get("spread_gate_hits", 0) for c in cycles))
-        notional.append(sum((c.get("gate_hits") or {}).get("notional_gate_hits", 0) for c in cycles))
-        position.append(sum((c.get("gate_hits") or {}).get("position_gate_hits", 0) for c in cycles))
+        spread.append(gh("spread_gate_hits"))
+        notional.append(gh("notional_gate_hits"))
+        agg_notional.append(gh("aggregate_notional_hits"))
+        position.append(gh("position_gate_hits"))
+        dir_conflict.append(gh("direction_conflict_hits"))
         degen.append(sum(1 for c in cycles if (c.get("fit_result") or {}).get("degenerate_fit")))
 
-    series = [("trades submitted", submitted, C_BLUE),
-              ("spread gate hits", spread, C_AMBER),
-              ("notional gate hits", notional, C_TEAL),
-              ("position gate hits", position, C_PURPLE),
-              ("degenerate-fit rejections", degen, C_RED)]
+    C_GREEN = "#15803d"
+    C_PINK  = "#be185d"
+    series = [
+        ("trades submitted",            submitted,    C_BLUE),
+        ("spread gate hits",            spread,       C_AMBER),
+        ("per-trade notional cap",      notional,     C_TEAL),
+        ("aggregate notional cap",      agg_notional, C_GREEN),
+        ("position cap (per-leg)",      position,     C_PURPLE),
+        ("direction-conflict guard",    dir_conflict, C_PINK),
+        ("degenerate-fit rejections",   degen,        C_RED),
+    ]
     n = len(series)
     x = list(range(len(dates)))
     width = 0.8 / n
 
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(11, 5.5))
     for i, (label, values, color) in enumerate(series):
         offs = [xi + (i - (n - 1) / 2) * width for xi in x]
         bars = ax.bar(offs, values, width=width * 0.92, color=color, label=label,
                       edgecolor="white", linewidth=0.6)
-        ax.bar_label(bars, fontsize=8.5, color="#374151", padding=2)
+        ax.bar_label(bars, fontsize=8, color="#374151", padding=2)
     ax.set_xticks(x)
     ax.set_xticklabels(dates)
     ax.set_ylabel("count")
-    ax.set_title("Trades submitted vs gate rejections, per day\n(gate_hits logged only from 2026-09-01 — see daily summary note)")
-    ax.legend(loc="upper left", frameon=False, ncols=2, fontsize=9)
+    ax.set_title(
+        "Trades submitted vs gate rejections, per day\n"
+        "aggregate-notional & direction-conflict keys added 2026-09-02 "
+        "(older logs stored those fires in parent categories)"
+    )
+    ax.legend(loc="upper left", frameon=False, ncols=2, fontsize=8.5)
     _style_axes(ax)
     fig.tight_layout()
     out = REPORT_DIR / "gate_comparison.png"

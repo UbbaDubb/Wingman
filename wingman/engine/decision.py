@@ -231,8 +231,13 @@ def propose_trade(snapshot: dict, fit_result: dict,
     gates_binding_this_cycle context — several rejections in one cycle is a
     market-instability signal the LLM layer is told to react to.
     """
-    gate_hits = {"spread_gate_hits": 0, "notional_gate_hits": 0,
-                 "position_gate_hits": 0}
+    gate_hits = {
+        "spread_gate_hits": 0,
+        "notional_gate_hits": 0,       # per-trade cap (_notional_reason)
+        "aggregate_notional_hits": 0,  # whole-book cap (_aggregate_long_straddle_notional)
+        "position_gate_hits": 0,       # per-leg qty cap (_position_reason)
+        "direction_conflict_hits": 0,  # opposing-direction guard (_direction_conflict_reason)
+    }
     # Degenerate-fit guard: refuse to trade off a fit whose sigmas sit against
     # the optimizer bounds. The reason is written back into fit_result so it
     # lands in the cycle's JSONL record (loop.py logs that same dict).
@@ -334,7 +339,7 @@ def propose_trade(snapshot: dict, fit_result: dict,
             # every day" accumulation risk (see MAX_AGGREGATE_LONG_VOL_NOTIONAL).
             agg = _aggregate_long_straddle_notional(current_positions)
             if agg >= MAX_AGGREGATE_LONG_VOL_NOTIONAL:
-                gate_hits["notional_gate_hits"] += 1
+                gate_hits["aggregate_notional_hits"] += 1
                 print(f"[decision] K={k:g} straddle skipped: aggregate long-vol "
                       f"exposure ${agg:,.0f} >= cap ${MAX_AGGREGATE_LONG_VOL_NOTIONAL:,.0f}")
                 continue
@@ -354,7 +359,7 @@ def propose_trade(snapshot: dict, fit_result: dict,
                 current_positions,
             )
             if reason:
-                gate_hits["position_gate_hits"] += 1
+                gate_hits["direction_conflict_hits"] += 1
                 print(f"[decision] K={k:g} straddle skipped: {reason}")
                 continue
             return {
@@ -426,7 +431,7 @@ def propose_trade(snapshot: dict, fit_result: dict,
             current_positions,
         )
         if reason:
-            gate_hits["position_gate_hits"] += 1
+            gate_hits["direction_conflict_hits"] += 1
             print(f"[decision] K={k:g} vertical skipped: {reason}")
             continue
         return {

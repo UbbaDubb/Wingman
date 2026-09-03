@@ -1,0 +1,841 @@
+{
+  "underlying": "SPY",
+  "expiry": "2026-09-18",
+  "timestamp": "2026-08-29T21:13:43.731984+00:00",
+  "spot": 769.35,
+  "spot_time": "2026-08-29T21:13:43.731984+00:00",
+  "market_open": null,
+  "warnings": [
+    "SYNTHETIC snapshot (lowvol_sigma1) \u2014 generated for pipeline dry-run testing, not market data"
+  ],
+  "strikes": [
+    {
+      "strike": 685.0,
+      "call": {
+        "symbol": "SPY260918C00685000",
+        "bid": 82.73,
+        "ask": 85.25,
+        "mid": 83.99,
+        "open_interest": 10738,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00685000",
+        "bid": 0.02,
+        "ask": 0.06,
+        "mid": 0.04,
+        "open_interest": 3514,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 690.0,
+      "call": {
+        "symbol": "SPY260918C00690000",
+        "bid": 77.84,
+        "ask": 80.21,
+        "mid": 79.025,
+        "open_interest": 10991,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00690000",
+        "bid": 0.04,
+        "ask": 0.08,
+        "mid": 0.06,
+        "open_interest": 5005,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 695.0,
+      "call": {
+        "symbol": "SPY260918C00695000",
+        "bid": 72.96,
+        "ask": 75.18,
+        "mid": 74.07,
+        "open_interest": 12244,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00695000",
+        "bid": 0.07,
+        "ask": 0.11,
+        "mid": 0.09,
+        "open_interest": 8940,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 700.0,
+      "call": {
+        "symbol": "SPY260918C00700000",
+        "bid": 68.09,
+        "ask": 70.16,
+        "mid": 69.125,
+        "open_interest": 8475,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00700000",
+        "bid": 0.12,
+        "ask": 0.16,
+        "mid": 0.14,
+        "open_interest": 3145,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 705.0,
+      "call": {
+        "symbol": "SPY260918C00705000",
+        "bid": 63.24,
+        "ask": 65.17,
+        "mid": 64.205,
+        "open_interest": 7270,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00705000",
+        "bid": 0.19,
+        "ask": 0.23,
+        "mid": 0.21,
+        "open_interest": 12935,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 710.0,
+      "call": {
+        "symbol": "SPY260918C00710000",
+        "bid": 58.43,
+        "ask": 60.21,
+        "mid": 59.32,
+        "open_interest": 881,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00710000",
+        "bid": 0.29,
+        "ask": 0.33,
+        "mid": 0.31,
+        "open_interest": 11522,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 715.0,
+      "call": {
+        "symbol": "SPY260918C00715000",
+        "bid": 53.64,
+        "ask": 55.28,
+        "mid": 54.46,
+        "open_interest": 7695,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00715000",
+        "bid": 0.42,
+        "ask": 0.46,
+        "mid": 0.44,
+        "open_interest": 10960,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 720.0,
+      "call": {
+        "symbol": "SPY260918C00720000",
+        "bid": 48.91,
+        "ask": 50.4,
+        "mid": 49.655,
+        "open_interest": 10151,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00720000",
+        "bid": 0.6,
+        "ask": 0.64,
+        "mid": 0.62,
+        "open_interest": 6822,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 725.0,
+      "call": {
+        "symbol": "SPY260918C00725000",
+        "bid": 44.23,
+        "ask": 45.57,
+        "mid": 44.9,
+        "open_interest": 5044,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00725000",
+        "bid": 0.84,
+        "ask": 0.88,
+        "mid": 0.86,
+        "open_interest": 9633,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 730.0,
+      "call": {
+        "symbol": "SPY260918C00730000",
+        "bid": 39.61,
+        "ask": 40.82,
+        "mid": 40.215,
+        "open_interest": 2619,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00730000",
+        "bid": 1.14,
+        "ask": 1.18,
+        "mid": 1.16,
+        "open_interest": 9011,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 735.0,
+      "call": {
+        "symbol": "SPY260918C00735000",
+        "bid": 35.08,
+        "ask": 36.14,
+        "mid": 35.61,
+        "open_interest": 1963,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00735000",
+        "bid": 1.52,
+        "ask": 1.57,
+        "mid": 1.545,
+        "open_interest": 9957,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 740.0,
+      "call": {
+        "symbol": "SPY260918C00740000",
+        "bid": 30.63,
+        "ask": 31.57,
+        "mid": 31.1,
+        "open_interest": 9653,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00740000",
+        "bid": 1.99,
+        "ask": 2.06,
+        "mid": 2.025,
+        "open_interest": 1815,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 745.0,
+      "call": {
+        "symbol": "SPY260918C00745000",
+        "bid": 26.29,
+        "ask": 27.09,
+        "mid": 26.69,
+        "open_interest": 11507,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00745000",
+        "bid": 2.57,
+        "ask": 2.65,
+        "mid": 2.61,
+        "open_interest": 6587,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 750.0,
+      "call": {
+        "symbol": "SPY260918C00750000",
+        "bid": 22.07,
+        "ask": 22.74,
+        "mid": 22.405,
+        "open_interest": 11931,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00750000",
+        "bid": 3.26,
+        "ask": 3.36,
+        "mid": 3.31,
+        "open_interest": 1199,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 755.0,
+      "call": {
+        "symbol": "SPY260918C00755000",
+        "bid": 17.99,
+        "ask": 18.53,
+        "mid": 18.26,
+        "open_interest": 3184,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00755000",
+        "bid": 4.09,
+        "ask": 4.22,
+        "mid": 4.155,
+        "open_interest": 7713,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 760.0,
+      "call": {
+        "symbol": "SPY260918C00760000",
+        "bid": 14.15,
+        "ask": 14.58,
+        "mid": 14.365,
+        "open_interest": 3310,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00760000",
+        "bid": 5.17,
+        "ask": 5.32,
+        "mid": 5.245,
+        "open_interest": 5350,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 765.0,
+      "call": {
+        "symbol": "SPY260918C00765000",
+        "bid": 10.75,
+        "ask": 11.08,
+        "mid": 10.915,
+        "open_interest": 10112,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00765000",
+        "bid": 6.69,
+        "ask": 6.89,
+        "mid": 6.79,
+        "open_interest": 2681,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 770.0,
+      "call": {
+        "symbol": "SPY260918C00770000",
+        "bid": 8.06,
+        "ask": 8.31,
+        "mid": 8.185,
+        "open_interest": 10358,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00770000",
+        "bid": 8.91,
+        "ask": 9.18,
+        "mid": 9.045,
+        "open_interest": 2089,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 775.0,
+      "call": {
+        "symbol": "SPY260918C00775000",
+        "bid": 6.16,
+        "ask": 6.34,
+        "mid": 6.25,
+        "open_interest": 3122,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00775000",
+        "bid": 11.92,
+        "ask": 12.28,
+        "mid": 12.1,
+        "open_interest": 9062,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 780.0,
+      "call": {
+        "symbol": "SPY260918C00780000",
+        "bid": 4.86,
+        "ask": 5.01,
+        "mid": 4.935,
+        "open_interest": 12026,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00780000",
+        "bid": 15.54,
+        "ask": 16.01,
+        "mid": 15.775,
+        "open_interest": 3056,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 785.0,
+      "call": {
+        "symbol": "SPY260918C00785000",
+        "bid": 3.92,
+        "ask": 4.04,
+        "mid": 3.98,
+        "open_interest": 4919,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00785000",
+        "bid": 19.51,
+        "ask": 20.1,
+        "mid": 19.805,
+        "open_interest": 13921,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 790.0,
+      "call": {
+        "symbol": "SPY260918C00790000",
+        "bid": 3.17,
+        "ask": 3.26,
+        "mid": 3.215,
+        "open_interest": 14851,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00790000",
+        "bid": 23.67,
+        "ask": 24.39,
+        "mid": 24.03,
+        "open_interest": 8967,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 795.0,
+      "call": {
+        "symbol": "SPY260918C00795000",
+        "bid": 2.54,
+        "ask": 2.62,
+        "mid": 2.58,
+        "open_interest": 7037,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00795000",
+        "bid": 27.96,
+        "ask": 28.81,
+        "mid": 28.385,
+        "open_interest": 5594,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 800.0,
+      "call": {
+        "symbol": "SPY260918C00800000",
+        "bid": 2.02,
+        "ask": 2.08,
+        "mid": 2.05,
+        "open_interest": 9419,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00800000",
+        "bid": 32.35,
+        "ask": 33.34,
+        "mid": 32.845,
+        "open_interest": 9109,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 805.0,
+      "call": {
+        "symbol": "SPY260918C00805000",
+        "bid": 1.58,
+        "ask": 1.63,
+        "mid": 1.605,
+        "open_interest": 4844,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00805000",
+        "bid": 36.83,
+        "ask": 37.95,
+        "mid": 37.39,
+        "open_interest": 928,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 810.0,
+      "call": {
+        "symbol": "SPY260918C00810000",
+        "bid": 1.23,
+        "ask": 1.27,
+        "mid": 1.25,
+        "open_interest": 2781,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00810000",
+        "bid": 41.39,
+        "ask": 42.65,
+        "mid": 42.02,
+        "open_interest": 14403,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 815.0,
+      "call": {
+        "symbol": "SPY260918C00815000",
+        "bid": 0.94,
+        "ask": 0.98,
+        "mid": 0.96,
+        "open_interest": 6621,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00815000",
+        "bid": 46.02,
+        "ask": 47.42,
+        "mid": 46.72,
+        "open_interest": 7545,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 820.0,
+      "call": {
+        "symbol": "SPY260918C00820000",
+        "bid": 0.71,
+        "ask": 0.75,
+        "mid": 0.73,
+        "open_interest": 7326,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00820000",
+        "bid": 50.71,
+        "ask": 52.25,
+        "mid": 51.48,
+        "open_interest": 11871,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 825.0,
+      "call": {
+        "symbol": "SPY260918C00825000",
+        "bid": 0.53,
+        "ask": 0.57,
+        "mid": 0.55,
+        "open_interest": 1535,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00825000",
+        "bid": 55.44,
+        "ask": 57.13,
+        "mid": 56.285,
+        "open_interest": 1791,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 830.0,
+      "call": {
+        "symbol": "SPY260918C00830000",
+        "bid": 0.39,
+        "ask": 0.43,
+        "mid": 0.41,
+        "open_interest": 4572,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00830000",
+        "bid": 60.22,
+        "ask": 62.05,
+        "mid": 61.135,
+        "open_interest": 7607,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 835.0,
+      "call": {
+        "symbol": "SPY260918C00835000",
+        "bid": 0.28,
+        "ask": 0.32,
+        "mid": 0.3,
+        "open_interest": 10264,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00835000",
+        "bid": 65.03,
+        "ask": 67.01,
+        "mid": 66.02,
+        "open_interest": 7666,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 840.0,
+      "call": {
+        "symbol": "SPY260918C00840000",
+        "bid": 0.2,
+        "ask": 0.24,
+        "mid": 0.22,
+        "open_interest": 6952,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00840000",
+        "bid": 69.86,
+        "ask": 71.99,
+        "mid": 70.925,
+        "open_interest": 14104,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 845.0,
+      "call": {
+        "symbol": "SPY260918C00845000",
+        "bid": 0.14,
+        "ask": 0.18,
+        "mid": 0.16,
+        "open_interest": 2918,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00845000",
+        "bid": 74.71,
+        "ask": 76.99,
+        "mid": 75.85,
+        "open_interest": 8832,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 850.0,
+      "call": {
+        "symbol": "SPY260918C00850000",
+        "bid": 0.09,
+        "ask": 0.13,
+        "mid": 0.11,
+        "open_interest": 8408,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00850000",
+        "bid": 79.58,
+        "ask": 82.01,
+        "mid": 80.795,
+        "open_interest": 7418,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 855.0,
+      "call": {
+        "symbol": "SPY260918C00855000",
+        "bid": 0.06,
+        "ask": 0.1,
+        "mid": 0.08,
+        "open_interest": 12229,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00855000",
+        "bid": 84.47,
+        "ask": 87.04,
+        "mid": 85.755,
+        "open_interest": 4444,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    },
+    {
+      "strike": 860.0,
+      "call": {
+        "symbol": "SPY260918C00860000",
+        "bid": 0.03,
+        "ask": 0.07,
+        "mid": 0.05,
+        "open_interest": 14334,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      },
+      "put": {
+        "symbol": "SPY260918P00860000",
+        "bid": 89.36,
+        "ask": 92.08,
+        "mid": 90.72,
+        "open_interest": 5374,
+        "iv": null,
+        "delta": null,
+        "quote_time": "2026-08-29T21:13:43.731984+00:00"
+      }
+    }
+  ]
+}

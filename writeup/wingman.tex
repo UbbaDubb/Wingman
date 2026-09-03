@@ -1,0 +1,112 @@
+\documentclass[10pt]{article}
+
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath}
+\usepackage{times}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+\titlespacing*{\section}{0pt}{8pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{2pt}
+\setlist[itemize]{topsep=2pt, itemsep=1pt, parsep=0pt}
+
+\pagenumbering{gobble}
+
+\begin{document}
+
+\begin{center}
+{\LARGE \textbf{Wingman: A Volatility-Surface Trading Agent for SPY Options}}\\[4pt]
+% TODO: confirm this is the account ID actually being submitted before
+% the write-up is finalized -- flag if the parallel/backup account ends
+% up being used instead.
+Paper account: \texttt{PA3ICB1OURR1} \quad|\quad
+% TODO: replace with the actual repository URL.
+\href{https://github.com/}{github.com/[repo]}
+\end{center}
+
+\vspace{2pt}
+\hrule
+\vspace{6pt}
+
+\section*{Overview}
+Wingman is an autonomous SPY options-trading pipeline built on Alpaca's paper-trading
+API. Each cycle it fetches a live SPY option-chain snapshot, fits a two-component
+lognormal mixture model (Brigo--Mercurio) to the market-implied volatility smile,
+compares the model's price at each strike against the market's, and proposes a
+defined-risk structure -- a long straddle where the market is cheap versus the model,
+or a short call vertical where it is rich -- subject to a chain of materiality and
+liquidity gates before any order is built.
+% TODO (optional, space permitting): if a final week P&L or trade-count figure is
+% available after tonight's close, a one-clause addition here ("...; across N live
+% cycles this week the pipeline proposed M structures totalling $X unrealized P&L")
+% would fit without pushing the write-up past one page. Do not add a number until
+% confirmed against the account snapshot at Thursday EOD.
+
+\section*{AI / Decision Logic}
+The core signal is a residual, not a raw IV level: implied vols are recovered from
+live bid/ask mids via Black--Scholes inversion, fit in price space to the mixture
+model via nonlinear least squares (Levenberg--Marquardt), and the fitted model's
+price at each strike is compared against the market's call-equivalent mid. A
+residual that clears every gate below becomes the highest-conviction trade
+candidate for that cycle.
+
+A planned second layer asks an LLM (Gemini) to classify the current market regime
+and gate proposed trade sizing (full / half / stand-down) before execution.
+% TODO: this sentence must be corrected or removed if the regime gate is still not
+% implemented by submission time -- as of the last working session,
+% engine/regime_gate.py raises NotImplementedError and is not yet wired into the
+% live cycle. Do not let this read as "implemented" unless it demonstrably is.
+
+\section*{Risk Gates}
+Every proposal must clear all of the following before an order is built:
+\begin{itemize}
+  \item \textbf{Degenerate-fit guard}: both fitted volatilities must sit inside an
+    economically plausible SPY vol band; a fit against its numerical bounds is
+    rejected outright rather than trusted as signal.
+  \item \textbf{Liquidity filter}: strikes are only considered if both legs clear a
+    minimum open-interest threshold and carry a genuine two-sided quote.
+  \item \textbf{Tradable moneyness band}: candidates are restricted to strikes close
+    to spot, since the unshifted symmetric mixture cannot reproduce SPY's actual
+    skew and would otherwise misprice the wings by construction, not by real
+    mispricing.
+  \item \textbf{Materiality gates}: a residual must exceed both a multiple of the
+    strike's own quote half-spread and a multiple of the fit's own RMSE noise
+    floor -- otherwise it is indistinguishable from quote noise or estimation
+    error.
+  \item \textbf{Execution-spread gate}: applied again on the \emph{actual} legs to
+    be traded (which can be materially wider than the reference quote used for the
+    residual), so a wide real spread cannot eat a signal that looked clean on
+    paper.
+  \item \textbf{Structural risk control}: every short leg is submitted only inside
+    a multi-leg (mleg) order alongside its covering long leg, so a naked short
+    position can never exist even transiently.
+  \item \textbf{Dry-run default}: order submission defaults to a safety dry run;
+    live submission requires an explicit, non-default environment flag.
+\end{itemize}
+% TODO: add a position-limit / max-open-structures gate here once implemented in
+% engine/regime_gate.py -- informed by the actual intraday position-accumulation
+% count observed in Monday's log, not an assumed number.
+
+\section*{Alpaca Infrastructure}
+Market data (spot trades, option snapshots with bid/ask/IV/greeks) and reference
+data (option contracts, open interest, the market clock) are pulled via the
+\texttt{alpaca-py} SDK against Alpaca's paper endpoints. Order submission runs
+through the Alpaca CLI: a multi-leg order payload is written to a temp file and
+piped into \texttt{alpaca api POST /v2/orders}, the confirmed-reliable path for
+mleg orders on this platform. Account equity and every open position are
+snapshotted once per cycle for a mark-to-market equity time series alongside the
+decision log.
+
+\vspace{4pt}
+\textit{% TODO: once tonight's EOD close is available, this closing line can carry
+% one concrete figure (e.g. final week P\&L, total structures opened, or final
+% account equity vs. starting equity) -- confirm the number against the account
+% snapshot before inserting; do not estimate.
+Wingman is an in-progress build: the mixture-fit and gating pipeline runs live and
+has produced real (paper) decisions this week, while the LLM-based regime gate is
+still under active development.}
+
+\end{document}

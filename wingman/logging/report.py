@@ -407,6 +407,32 @@ def _load_snapshot_index():
     return index
 
 
+def _clean_cycles_with_snapshot(days, snap_index):
+    """
+    {day_label: [cycle, ...]} for cycles whose fit succeeded, cleared the
+    degenerate-fit guard, AND were matched to their full snapshot (attached
+    as cycle['_full_snapshot']). Shared by every chart that needs the raw
+    per-strike quotes a cycle was fit against — the 3D smile-evolution mesh
+    and the by-day smile overlay both build on this exact same filtering, so
+    "clean cycle" means the same thing in both places.
+    """
+    out = {}
+    for d, day in days.items():
+        lst = []
+        for c in day["cycles"]:
+            fit = c.get("fit_result")
+            if not fit or fit.get("degenerate_fit") or not fit.get("success", True):
+                continue
+            snap = snap_index.get((c.get("snapshot") or {}).get("timestamp"))
+            if snap is None:
+                continue
+            c["_full_snapshot"] = snap
+            lst.append(c)
+        if lst:
+            out[d] = lst
+    return out
+
+
 def chart_smile_evolution_3d(days):
     """
     Strike-moneyness x cycle-time x implied-vol mesh across every cycle whose
@@ -427,22 +453,8 @@ def chart_smile_evolution_3d(days):
     from wingman.models.fit_utils import call_equivalent_quote, implied_vol_call
 
     snap_index = _load_snapshot_index()
-
-    def usable(day):
-        out = []
-        for c in day["cycles"]:
-            fit = c.get("fit_result")
-            if not fit or fit.get("degenerate_fit") or not fit.get("success", True):
-                continue
-            snap = snap_index.get((c.get("snapshot") or {}).get("timestamp"))
-            if snap is None:
-                continue
-            c["_full_snapshot"] = snap
-            out.append(c)
-        return out
-
     n_all_fit = sum(1 for day in days.values() for c in day["cycles"] if c.get("fit_result"))
-    day_groups = [(d, usable(day)) for d, day in days.items()]
+    day_groups = list(_clean_cycles_with_snapshot(days, snap_index).items())
     id_to_x, day_segments, tick_pos, tick_lab = market_hours_axis(day_groups)
     n_used = sum(len(recs) for _, _, recs in day_segments)
     n_excluded = n_all_fit - n_used
@@ -509,6 +521,91 @@ def chart_smile_evolution_3d(days):
     fig.savefig(out, dpi=150, bbox_inches="tight", pad_inches=0.4)  # 3D axes fight plain tight_layout
     plt.close(fig)
     return out
+
+
+def chart_smile_by_day(days):
+    """
+    One representative clean smile per day — market IV vs moneyness — as flat
+    2D overlaid lines. Built specifically to check the earlier claim (made
+    from reading the 3D chart) that the smile got visibly steeper/noisier
+    through the week: a 3D perspective can visually exaggerate or hide a
+    trend that a flat overlay either confirms or kills outright.
+
+    REPRESENTATIVE-CYCLE CHOICE: the day's LOWEST price-space fit RMSE (same
+    metric as fit_quality.png), not a time-median pick. Reasoning: RMSE
+    directly measures how well the fit matches its own day's market quotes,
+    so the lowest-RMSE cycle is that day's best-calibrated read of the true
+    smile shape — a time-median cycle could easily land on the day's worst
+    fit and manufacture "noise" that's really just calibration error.
+
+    Also prints, per day, real (not narrative) numbers: ATM IV from that
+    representative curve, and the average sigma2 and average fit RMSE across
+    ALL that day's clean cycles (not just the representative one) — this is
+    the quantitative check.
+    """
+    from wingman.models.fit_utils import call_equivalent_quote, implied_vol_call
+
+    snap_index = _load_snapshot_index()
+    clean_by_day = _clean_cycles_with_snapshot(days, snap_index)
+
+    palette = [C_BLUE, C_AMBER, C_TEAL, C_PURPLE, C_RED]
+    fig, ax = plt.subplots(figsize=(9.5, 6))
+
+    print("\n== SMILE-BY-DAY: quantitative check (clean cycles only) ==")
+    header = f"{'date':>12} {'n_clean':>8} {'ATM IV (rep.)':>14} {'avg sigma2':>11} {'avg RMSE':>9}"
+    print(header)
+    rows_printed = []
+
+    for i, (day_label, cycles) in enumerate(clean_by_day.items()):
+        rmses_all = [(c, fit_rmse(c)) for c in cycles]
+        rmses_all = [(c, r) for c, r in rmses_all if r is not None]
+        if not rmses_all:
+            continue
+        rep, rep_rmse = min(rmses_all, key=lambda cr: cr[1])
+
+        snap = rep["_full_snapshot"]
+        fit = rep["fit_result"]
+        forward, tte, r = fit["forward"], fit["tte"], fit.get("r", 0.0)
+        spot = snap["spot"]
+        mny, ivs = [], []
+        for row in snap.get("strikes", []):
+            q = call_equivalent_quote(row, spot, forward, tte, r)
+            if q is None:
+                continue
+            iv = implied_vol_call(q["mid"], forward, row["strike"], tte, r)
+            if iv is None:
+                continue
+            mny.append((row["strike"] / spot - 1.0) * 100)
+            ivs.append(iv)
+        if not mny:
+            continue
+        order = sorted(range(len(mny)), key=lambda k: mny[k])
+        mny_s, ivs_s = [mny[k] for k in order], [ivs[k] for k in order]
+
+        color = palette[i % len(palette)]
+        ax.plot(mny_s, ivs_s, color=color, lw=2.4, marker="o", ms=3.5,
+                label=f"{day_label}  ({rep['timestamp'][11:16]} UTC, RMSE {rep_rmse:.3f})")
+
+        atm_idx = min(range(len(mny_s)), key=lambda k: abs(mny_s[k]))
+        atm_iv = ivs_s[atm_idx]
+        avg_sigma2 = sum(c["fit_result"]["sigma2"] for c, _ in rmses_all) / len(rmses_all)
+        avg_rmse = sum(r for _, r in rmses_all) / len(rmses_all)
+        row = f"{day_label:>12} {len(rmses_all):>8} {atm_iv:>14.4f} {avg_sigma2:>11.4f} {avg_rmse:>9.4f}"
+        print(row)
+        rows_printed.append((day_label, len(rmses_all), atm_iv, avg_sigma2, avg_rmse))
+
+    ax.axvline(0, color=C_GRAY, lw=1, alpha=0.6, zorder=0)
+    ax.set_xlabel("moneyness: (strike/spot − 1) x 100, %")
+    ax.set_ylabel("implied vol")
+    ax.set_title("One representative smile per day (day's lowest-RMSE clean cycle)\n"
+                 "— checking whether the smile actually got steeper/noisier through the week")
+    ax.legend(loc="upper right", frameon=False, fontsize=9)
+    _style_axes(ax)
+    fig.tight_layout()
+    out = REPORT_DIR / "smile_by_day.png"
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    return out, rows_printed
 
 
 def gate_effectiveness(days):
@@ -585,6 +682,7 @@ The 3D chart uses the same market-hours cycle axis, applied per day.
 | `equity_unrealized.png` | Account equity and total unrealized P&L, continuous across the whole week. |
 | `gate_comparison.png` | Trades submitted vs cycles rejected per gate type, one bar group per day — the incident (Monday, unbounded duplication) vs the fix (Tuesday, capped exposure). |
 | `smile_evolution_3d.png` | Strike-moneyness x cycle-time x implied-vol mesh, market-hours-only cycle axis, degenerate-fit cycles excluded. **This is NOT a volatility surface** — Wingman only ever queries one fixed expiry (2026-09-18), so there is no expiry axis in this data; it shows how the single-expiry smile's shape moved across the week, nothing more. |
+| `smile_by_day.png` | One representative smile per day (that day's lowest-RMSE clean cycle) as flat 2D overlaid lines — built to directly test, not just visually assert, whether the smile got steeper/noisier through the week. Console output from the same run prints the per-day ATM IV, average sigma2, and average fit RMSE behind the chart. |
 """
 
 
@@ -603,6 +701,8 @@ def main():
     print("\n== 4. EQUITY / UNREALIZED P&L CHART ==\n  saved:", chart_equity(days))
     print("\n== 4b. GATE COMPARISON CHART ==\n  saved:", chart_gate_comparison(days))
     print("\n== 4c. SMILE EVOLUTION (3D) ==\n  saved:", chart_smile_evolution_3d(days))
+    smile_by_day_out, _ = chart_smile_by_day(days)
+    print("\n== 4d. SMILE BY DAY (2D overlay) ==\n  saved:", smile_by_day_out)
     gate_effectiveness(days)
     summary(days)
     (REPORT_DIR / "README.md").write_text(REPORTS_README, encoding="utf-8")

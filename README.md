@@ -36,7 +36,7 @@ V_mix(K,T) = λ · V_BS(F,K,T,σ1) + (1−λ) · V_BS(F,K,T,σ2)
 ```
 
 Two components — a "calm" volatility σ1 and a "stress" volatility σ2, blended by weight λ.
-Brigo's own notes show N=2 is sufficient to generate a genuine smile; more components risk
+The author of the model has shown that N=2 is sufficient to generate a genuine smile; more components risk
 overfitting a live, noisy sample refit every cycle.
 
 ## What actually happened this week
